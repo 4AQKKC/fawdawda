@@ -1,0 +1,46 @@
+name: Build React Native APK
+
+on:
+  workflow_dispatch: # chạy thủ công từ GitHub Actions tab
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      # 1. Lấy code từ repo
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2. Cài đặt JDK cho Android
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      # 3. Cài Node.js & npm (phiên bản phù hợp React Native)
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      # 4. Cài dependencies
+      - name: Install dependencies
+        run: |
+          cd golikeApp   # Nếu project ở gốc repo thì xoá dòng này
+          npm install
+
+      # 5. Build APK
+      - name: Build APK
+        run: |
+          cd golikeApp/android   # Nếu project ở gốc repo thì cd android
+          chmod +x gradlew
+          ./gradlew assembleRelease
+
+      # 6. Upload APK thành artifact để tải về
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: golikeApp/android/app/build/outputs/apk/release/app-release.apk
