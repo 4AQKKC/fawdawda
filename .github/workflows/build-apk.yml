@@ -18,7 +18,7 @@ jobs:
     - name: Checkout repository
       uses: actions/checkout@v4
       with:
-        submodules: false  # ⚠️ Tắt submodule để tránh lỗi
+        submodules: false
 
     - name: Setup Node.js
       uses: actions/setup-node@v3
@@ -35,6 +35,9 @@ jobs:
       with:
         distribution: 'temurin'
         java-version: '17'
+
+    - name: Grant execute permission to gradlew
+      run: chmod +x $PROJECT_DIR/android/gradlew
 
     - name: Build APK
       run: |
