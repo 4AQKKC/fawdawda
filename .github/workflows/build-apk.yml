@@ -1,46 +1,62 @@
 name: Build React Native APK
 
 on:
-  workflow_dispatch:
+  workflow_dispatch: # chạy thủ công
+  push:
+    branches:
+      - main  # tự động build khi push nhánh main
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
+      # 1️⃣ Checkout repo
       - name: Checkout repository
         uses: actions/checkout@v4
+        # không dùng submodules, tránh lỗi git 128
 
+      # 2️⃣ Detect project folder (nơi có package.json)
       - name: Detect project folder
         id: detect
         run: |
-          PROJECT_DIR=$(find . -maxdepth 2 -type f -name package.json -exec dirname {} \;)
+          # dùng folder MyNewApp cố định
+          PROJECT_DIR="MyNewApp"
+          if [ ! -f "$PROJECT_DIR/package.json" ]; then
+            echo "Error: package.json not found in $PROJECT_DIR"
+            exit 1
+          fi
           echo "PROJECT_DIR=$PROJECT_DIR" >> $GITHUB_ENV
           echo "Detected project folder: $PROJECT_DIR"
 
+      # 3️⃣ Setup Node.js
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 18
 
+      # 4️⃣ Setup JDK 17
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: 17
 
+      # 5️⃣ Install dependencies
       - name: Install dependencies
         run: |
           cd $PROJECT_DIR
           npm install
 
-      - name: Build APK
+      # 6️⃣ Build APK
+      - name: Build release APK
         run: |
           cd $PROJECT_DIR/android
           chmod +x gradlew
           ./gradlew assembleRelease
 
-      - name: Upload APK
+      # 7️⃣ Upload APK artifact
+      - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: app-release
