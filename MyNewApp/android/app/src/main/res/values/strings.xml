@@ -1,1 +1,3 @@
-<string name="accessibility_service_description">Dịch vụ auto click nút Follow TikTok</string>
+<resources>
+    <string name="app_name">MyNewApp</string>
+</resources>
