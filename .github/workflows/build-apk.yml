@@ -9,58 +9,67 @@ on:
 env:
   PROJECT_DIR: MyNewApp
   JAVA_HOME: /opt/hostedtoolcache/Java_Temurin-Hotspot_jdk/17.0.16-8/x64
-  NODE_VERSION: 22.17.0
 
 jobs:
   build-apk:
+    name: Build APK
     runs-on: ubuntu-latest
+
     steps:
+      # 1️⃣ Checkout code
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-    - name: Checkout repository
-      uses: actions/checkout@v4
-      with:
-        submodules: false
+      # 2️⃣ Setup Node.js
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 22.17.0
+          cache: "npm"
 
-    - name: Set up Node.js
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
+      # 3️⃣ Install dependencies
+      - name: Install dependencies
+        run: npm ci
+        working-directory: ${{ env.PROJECT_DIR }}
 
-    - name: Install dependencies
-      run: |
-        cd $PROJECT_DIR
-        npm install
+      # 4️⃣ Setup JDK (already set JAVA_HOME in env)
+      - name: Setup Java
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
 
-    - name: Set up JDK
-      uses: actions/setup-java@v3
-      with:
-        distribution: 'temurin'
-        java-version: 17
+      # 5️⃣ Setup Android SDK
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v2
+        with:
+          api-level: 36
+          build-tools: 36.0.0
+          ndk: 27.1.12297006
 
-    - name: Accept Android licenses
-      run: yes | sdkmanager --licenses
-      shell: bash
+      # 6️⃣ Grant gradlew execute permission
+      - name: Make gradlew executable
+        run: chmod +x ${{ env.PROJECT_DIR }}/android/gradlew
 
-    - name: Build Release APK
-      run: |
-        cd $PROJECT_DIR/android
-        chmod +x ./gradlew
-        ./gradlew :app:clean
-        ./gradlew :app:assembleRelease --stacktrace
+      # 7️⃣ Build APK
+      - name: Build Release APK
+        run: ./gradlew assembleRelease
+        working-directory: ${{ env.PROJECT_DIR }}/android
 
-    - name: Check APK exists
-      run: |
-        if [ ! -f "$PROJECT_DIR/android/app/build/outputs/apk/release/app-release.apk" ]; then
-          echo "APK not found!"
-          exit 1
-        else
-          echo "APK found."
-        fi
+      # 8️⃣ Verify APK exists
+      - name: Verify APK
+        run: |
+          if [ ! -f ${{ env.PROJECT_DIR }}/android/app/build/outputs/apk/release/app-release.apk ]; then
+            echo "APK not found!"
+            exit 1
+          fi
 
-    - name: Upload Release APK
-      uses: actions/upload-artifact@v4
-      with:
-        name: app-release
-        path: $PROJECT_DIR/android/app/build/outputs/apk/release/app-release.apk
-        if-no-files-found: error
+      # 9️⃣ Upload artifact
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: app-release
+          path: ${{ env.PROJECT_DIR }}/android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
